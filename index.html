@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multimedia Zine Viewer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@700;900&family=Work+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #f8f5f0;
+            --bg-page: #ffffff;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666666;
+            --accent-1: #d94b2c;
+            --accent-2: #2c5fd9;
+            --accent-3: #f0a500;
+            --shadow-light: rgba(0, 0, 0, 0.1);
+            --shadow-medium: rgba(0, 0, 0, 0.15);
+            --shadow-heavy: rgba(0, 0, 0, 0.25);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Work Sans', sans-serif;
+            background: linear-gradient(135deg, #f8f5f0 0%, #e8e4dc 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            color: var(--text-primary);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .header h1 {
+            font-family: 'Bitter', serif;
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 900;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+            text-shadow: 3px 3px 0 var(--accent-3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            animation: fadeIn 1s ease-out 0.2s both;
+        }
+
+        .page-nav {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .nav-btn {
+            background: var(--text-primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-btn:hover {
+            background: var(--accent-1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow-medium);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .page-indicator {
+            font-family: 'Bitter', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .zine-viewer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1500px;
+            animation: fadeInUp 1s ease-out 0.4s both;
+        }
+
+        .page-container {
+            position: relative;
+            max-width: 900px;
+            width: 100%;
+            aspect-ratio: 8.5 / 11;
+            background: var(--bg-page);
+            box-shadow: 
+                0 20px 60px var(--shadow-light),
+                0 5px 15px var(--shadow-medium),
+                inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .page-container.flipping {
+            transform: rotateY(10deg) scale(0.95);
+            opacity: 0.7;
+        }
+
+        .page-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            background: white;
+        }
+
+        .page-error {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .page-error svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .interactive-marker {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 4px 12px var(--shadow-medium);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .interactive-marker:hover {
+            transform: scale(1.15);
+            box-shadow: 0 6px 20px var(--shadow-heavy);
+            animation: none;
+        }
+
+        .interactive-marker.lens {
+            background: linear-gradient(135deg, var(--accent-2) 0%, #5a8fff 100%);
+        }
+
+        .interactive-marker.audio {
+            background: linear-gradient(135deg, var(--accent-1) 0%, #ff6b4a 100%);
+        }
+
+        .interactive-marker.link {
+            background: linear-gradient(135deg, var(--accent-3) 0%, #ffc850 100%);
+        }
+
+
+
+        .marker-icon {
+            width: 24px;
+            height: 24px;
+            filter: brightness(0) invert(1);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease-out;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+            background: white;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-content img {
+            max-width: 100%;
+            max-height: 80vh;
+            display: block;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--text-primary);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .modal-close:hover {
+            background: var(--accent-1);
+            transform: rotate(90deg) scale(1.1);
+        }
+
+        /* Audio Player */
+        .audio-player {
+            background: white;
+            padding: 2rem;
+            border-radius: 0;
+            min-width: 400px;
+        }
+
+        .audio-player h3 {
+            font-family: 'Bitter', serif;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .audio-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .audio-controls audio {
+            width: 100%;
+        }
+
+        /* Legend */
+        .legend {
+            background: white;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            box-shadow: 0 4px 12px var(--shadow-light);
+            animation: fadeIn 1s ease-out 0.6s both;
+        }
+
+        .legend h3 {
+            font-family: 'Bitter', serif;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .legend-items {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .legend-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .legend-icon img {
+            width: 20px;
+            height: 20px;
+            filter: brightness(0) invert(1);
+        }
+
+        .legend-text {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 4px 12px var(--shadow-medium);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 6px 16px var(--shadow-heavy);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .controls {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .modal-content {
+                padding: 1rem;
+            }
+
+            .audio-player {
+                min-width: auto;
+                width: 100%;
+            }
+
+            .legend-items {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        /* Folder Setup Instructions */
+        .instructions {
+            background: white;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 4px 12px var(--shadow-light);
+            animation: fadeIn 1s ease-out 0.8s both;
+        }
+
+        .instructions h3 {
+            font-family: 'Bitter', serif;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent-1);
+        }
+
+        .instructions pre {
+            background: #f5f5f5;
+            padding: 1rem;
+            overflow-x: auto;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            border-left: 4px solid var(--accent-1);
+        }
+
+        .instructions p {
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Puente Hills - Zine Title</h1>
+            <p>Description of this specific Zine. What does it tell us? Who are the creators?</p>
+        </header>
+
+        <div class="controls">
+            <div class="page-nav">
+                <button class="nav-btn" id="prevBtn" onclick="previousPage()">← Previous</button>
+                <div class="page-indicator" id="pageIndicator">Page 1</div>
+                <button class="nav-btn" id="nextBtn" onclick="nextPage()">Next →</button>
+            </div>
+        </div>
+
+        <div class="zine-viewer">
+            <div class="page-container" id="pageContainer">
+                <img id="pageImage" class="page-image" src="" alt="Zine Page">
+                <div id="interactiveMarkers"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Deep Dive Content -->
+    <div class="modal" id="deepModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('deepModal')">×</button>
+            <img id="deepImage" src="" alt="Deep Dive Content">
+        </div>
+    </div>
+
+    <!-- Modal for Audio Content -->
+    <div class="modal" id="audioModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('audioModal')">×</button>
+            <div class="audio-player">
+                <h3>Audio Content</h3>
+                <div class="audio-controls">
+                    <audio id="audioPlayer" controls>
+                        <source id="audioSource" src="" type="audio/mpeg">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - will be loaded from config.json
+        let config = {
+            currentPage: 1,
+            totalPages: 1,
+            pageFormat: 'jpg',
+            interactives: {}
+        };
+
+        // Load configuration from external file
+        async function loadConfig() {
+            try {
+                const response = await fetch('config.json');
+                if (!response.ok) {
+                    console.warn(`⚠ Failed to load config.json: ${response.status} ${response.statusText}`);
+                    return false;
+                }
+                const externalConfig = await response.json();
+                
+                // Merge external config with defaults
+                config = {
+                    ...config,
+                    ...externalConfig,
+                    currentPage: 1 // Always start at page 1
+                };
+                
+                console.log('✓ Configuration loaded successfully');
+                return true;
+            } catch (error) {
+                console.warn('⚠ Could not load config.json, using defaults');
+                console.warn(`Error details: ${error.message}`);
+                return false;
+            }
+        }
+
+        // Initialize
+        async function init() {
+            await loadConfig();
+            loadPage(config.currentPage);
+        }
+
+        // Load page
+        function loadPage(pageNum) {
+            const pageImage = document.getElementById('pageImage');
+            const pageContainer = document.getElementById('pageContainer');
+            const markersContainer = document.getElementById('interactiveMarkers');
+            
+            // Add flip animation
+            pageContainer.classList.add('flipping');
+            
+            setTimeout(() => {
+                // Update page image
+                const imagePath = `Page${pageNum}.${config.pageFormat}`;
+                
+                pageImage.onerror = function() {
+                    this.style.display = 'none';
+                    markersContainer.innerHTML = `
+                        <div class="page-error">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                                <polyline points="13 2 13 9 20 9"></polyline>
+                            </svg>
+                            <p>Page ${pageNum} not found<br><small>Place Page${pageNum}.${config.pageFormat} in the same folder</small></p>
+                        </div>
+                    `;
+                };
+                
+                pageImage.onload = function() {
+                    this.style.display = 'block';
+                    loadInteractiveMarkers(pageNum);
+                };
+                
+                pageImage.src = imagePath;
+                
+                // Update UI
+                document.getElementById('pageIndicator').textContent = `Page ${pageNum}`;
+                document.getElementById('prevBtn').disabled = pageNum === 1;
+                document.getElementById('nextBtn').disabled = pageNum === config.totalPages;
+                
+                // Remove flip animation
+                pageContainer.classList.remove('flipping');
+            }, 250);
+        }
+
+        // Load interactive markers
+        function loadInteractiveMarkers(pageNum) {
+            const markersContainer = document.getElementById('interactiveMarkers');
+            markersContainer.innerHTML = '';
+            
+            const interactives = config.interactives[pageNum];
+            if (!interactives) return;
+            
+            interactives.forEach((item, index) => {
+                const marker = document.createElement('div');
+                marker.className = `interactive-marker ${item.type}`;
+                marker.style.left = `${item.x}%`;
+                marker.style.top = `${item.y}%`;
+                
+                // Add icon
+                const icon = getIconSVG(item.type);
+                marker.innerHTML = icon;
+                
+                // Add click handler - use file property or default to index+1
+                const fileNumber = item.file || (index + 1);
+                marker.onclick = () => handleInteraction(item.type, fileNumber, pageNum);
+                
+                markersContainer.appendChild(marker);
+            });
+        }
+
+        // Get icon SVG
+        function getIconSVG(type) {
+            const icons = {
+                lens: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>',
+                audio: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 18v-6a9 9 0 0 1 18 0v6"></path><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path></svg>',
+                link: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>'
+            };
+            return icons[type] || '';
+        }
+
+        // Handle interaction
+        function handleInteraction(type, fileNumber, pageNum) {
+            const folder = `Page${pageNum}`;
+            
+            switch(type) {
+                case 'lens':
+                    openDeepDive(folder, fileNumber);
+                    break;
+                case 'audio':
+                    playAudio(folder, fileNumber);
+                    break;
+                case 'link':
+                    openLink(folder, fileNumber);
+                    break;
+            }
+        }
+
+        // Open deep dive modal
+        function openDeepDive(folder, fileNumber) {
+            const modal = document.getElementById('deepModal');
+            const image = document.getElementById('deepImage');
+            image.src = `${folder}/Deep${fileNumber}.jpg`;
+            modal.classList.add('active');
+        }
+
+        // Play audio
+        function playAudio(folder, fileNumber) {
+            const modal = document.getElementById('audioModal');
+            const audio = document.getElementById('audioPlayer');
+            const source = document.getElementById('audioSource');
+            source.src = `${folder}/Audio${fileNumber}.mp3`;
+            audio.load();
+            modal.classList.add('active');
+            audio.play();
+        }
+
+        // Open external link
+        async function openLink(folder, fileNumber) {
+            try {
+                const response = await fetch(`${folder}/Links.txt`);
+                const text = await response.text();
+                const links = text.split('\n').filter(line => line.trim());
+                
+                if (links[fileNumber - 1]) {
+                    window.open(links[fileNumber - 1].trim(), '_blank');
+                }
+            } catch (error) {
+                alert(`Could not load links from ${folder}/Links.txt`);
+            }
+        }
+
+        // Close modal
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('active');
+            
+            // Stop audio if closing audio modal
+            if (modalId === 'audioModal') {
+                const audio = document.getElementById('audioPlayer');
+                audio.pause();
+            }
+        }
+
+        // Navigation
+        function nextPage() {
+            if (config.currentPage < config.totalPages) {
+                config.currentPage++;
+                loadPage(config.currentPage);
+            }
+        }
+
+        function previousPage() {
+            if (config.currentPage > 1) {
+                config.currentPage--;
+                loadPage(config.currentPage);
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextPage();
+            if (e.key === 'ArrowLeft') previousPage();
+            if (e.key === 'Escape') {
+                closeModal('deepModal');
+                closeModal('audioModal');
+            }
+        });
+
+        // Close modal on background click
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal(modal.id);
+                }
+            });
+        });
+
+        // Initialize on load
+        window.onload = init;
+    </script>
+</body>
+</html>

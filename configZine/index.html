@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>Zine Config Tool</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+body { font-family: Arial; display:flex; gap:20px; }
+
+#ui { width:220px; }
+
+#canvasWrap {
+  position: relative;
+}
+
+canvas {
+  cursor: pointer;
+}
+
+.icon {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:white;
+  font-size:16px;
+  transform: translate(-50%, -50%);
+}
+
+.lens  { background:#2c5fd9; }
+.audio { background:#d94b2c; }
+.link  { background:#f0a500; }
+
+#menu {
+  position:absolute;
+  background:white;
+  border:1px solid #aaa;
+  padding:8px;
+  display:none;
+  box-shadow:0 3px 8px rgba(0,0,0,.2);
+  z-index:10;
+}
+
+#menu div {
+  padding:6px 10px;
+  cursor:pointer;
+}
+
+#menu div:hover {
+  background:#eee;
+}
+</style>
+</head>
+<body>
+
+<div id="ui">
+  <input type="file" id="upload" accept=".jpg"/>
+
+  <h3>Number of Page ↓</h3>
+  <select id="pageNum">
+    <option>2</option><option>3</option><option>4</option>
+    <option>5</option><option>6</option><option>7</option>
+    <option>8</option><option>9</option>
+  </select>
+
+  <button id="exportBtn">Export File</button>
+</div>
+
+<div id="canvasWrap"></div>
+
+<div id="menu">
+  <div data-type="audio"><i class="fa-solid fa-headphones"></i> Audio</div>
+  <div data-type="lens"><i class="fa-solid fa-magnifying-glass"></i> Pop-up Image</div>
+  <div data-type="link"><i class="fa-solid fa-link"></i> External Link</div>
+</div>
+
+<script>
+let img;
+let icons = [];
+let counters = { audio:0, lens:0, link:0 };
+let clickPos = null;
+let canvas;
+
+function setup() {
+  canvas = createCanvas(600,800);
+  canvas.parent("canvasWrap");
+
+  document.getElementById("upload").addEventListener("change", handleUpload);
+  document.getElementById("exportBtn").onclick = exportJSONFile;
+
+  document.querySelectorAll("#menu div").forEach(el=>{
+    el.onclick = (e)=>{
+      e.stopPropagation();
+      chooseType(el.dataset.type);
+    };
+  });
+
+  // Prevent menu clicks from reaching p5
+  document.getElementById("menu").addEventListener("mousedown", e=>{
+    e.stopPropagation();
+  });
+}
+
+function draw() {
+  background(220);
+  if (img) image(img,0,0,width,height);
+}
+
+function mousePressed() {
+  if (!img) return;
+  if (mouseX<0||mouseX>width||mouseY<0||mouseY>height) return;
+
+  clickPos = {x:mouseX,y:mouseY};
+
+  let menu=document.getElementById("menu");
+  menu.style.left = (canvas.position().x + mouseX) + "px";
+  menu.style.top  = (canvas.position().y + mouseY) + "px";
+  menu.style.display="block";
+}
+
+function handleUpload(e){
+  let file=e.target.files[0];
+  if(file){
+    let reader=new FileReader();
+    reader.onload=ev=>{
+      loadImage(ev.target.result,loaded=>img=loaded);
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function chooseType(type){
+  document.getElementById("menu").style.display="none";
+
+  counters[type]++;
+
+  let px = Math.round((clickPos.x/width)*100);
+  let py = Math.round((clickPos.y/height)*100);
+
+  let obj={type:type,file:counters[type],x:px,y:py};
+  icons.push(obj);
+
+  placeIcon(obj);
+}
+
+function placeIcon(obj){
+  let wrap=document.getElementById("canvasWrap");
+
+  let icon=document.createElement("div");
+  icon.className="icon "+obj.type;
+
+  let iconType={
+    lens:"fa-magnifying-glass",
+    audio:"fa-headphones",
+    link:"fa-link"
+  };
+
+  icon.innerHTML='<i class="fa-solid '+iconType[obj.type]+'"></i>';
+
+  icon.style.left=(obj.x/100*width)+"px";
+  icon.style.top =(obj.y/100*height)+"px";
+
+  wrap.appendChild(icon);
+}
+
+function exportJSONFile(){
+  let page=document.getElementById("pageNum").value;
+  let output={};
+  output[page]=icons;
+
+  let blob=new Blob([JSON.stringify(output,null,2)],{type:"application/json"});
+  let a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="config_"+page+".json";
+  a.click();
+}
+</script>
+</body>
+</html>

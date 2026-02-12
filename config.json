@@ -1,0 +1,60 @@
+{
+  "totalPages": 3,
+  "pageFormat": "jpg",
+  "interactives": {
+    "1": [
+      {
+        "type": "lens",
+        "file": 1,
+        "x": 20,
+        "y": 30
+      },
+      {
+        "type": "lens",
+        "file": 2,
+        "x": 70,
+        "y": 50
+      },
+      {
+        "type": "link",
+        "file": 1,
+        "x": 50,
+        "y": 80
+      }
+    ],
+    "2": [      
+      {
+        "type": "audio",
+        "file": 1,
+        "x": 80,
+        "y": 30
+      }
+    ],
+    "3": [
+		{
+		  "type": "audio",
+		  "file": 1,
+		  "x": 66,
+		  "y": 15
+		},
+		{
+		  "type": "lens",
+		  "file": 1,
+		  "x": 30,
+		  "y": 52
+		},
+		{
+		  "type": "link",
+		  "file": 1,
+		  "x": 79,
+		  "y": 83
+		},
+		{
+		  "type": "link",
+		  "file": 2,
+		  "x": 42,
+		  "y": 68
+		}
+	  ]
+  }
+}
