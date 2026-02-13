@@ -20,6 +20,7 @@ body { font-family: Arial; display:flex; gap:20px; }
 
 canvas {
   cursor: pointer;
+  touch-action: none;
 }
 
 .icon {
@@ -88,6 +89,7 @@ let icons = [];
 let counters = { audio:0, lens:0, link:0 };
 let clickPos = null;
 let canvas;
+let lastTouchTime = 0;
 
 function setup() {
   canvas = createCanvas(600,800);
@@ -103,7 +105,6 @@ function setup() {
     };
   });
 
-  // Prevent menu clicks from reaching p5
   document.getElementById("menu").addEventListener("mousedown", e=>{
     e.stopPropagation();
   });
@@ -115,14 +116,34 @@ function draw() {
 }
 
 function mousePressed() {
-  if (!img) return;
-  if (mouseX<0||mouseX>width||mouseY<0||mouseY>height) return;
+  if (millis() - lastTouchTime < 400) return;
+  openMenu(mouseX, mouseY);
+}
 
-  clickPos = {x:mouseX,y:mouseY};
+function touchStarted(event) {
+  // Only react if touching the canvas
+  if (event.target.tagName !== "CANVAS") return;
+
+  lastTouchTime = millis();
+
+  let rect = canvas.elt.getBoundingClientRect();
+  let x = event.touches[0].clientX - rect.left;
+  let y = event.touches[0].clientY - rect.top;
+
+  openMenu(x, y);
+
+  return false;
+}
+
+function openMenu(x, y) {
+  if (!img) return;
+  if (x<0||x>width||y<0||y>height) return;
+
+  clickPos = {x,y};
 
   let menu=document.getElementById("menu");
-  menu.style.left = (canvas.position().x + mouseX) + "px";
-  menu.style.top  = (canvas.position().y + mouseY) + "px";
+  menu.style.left = (canvas.position().x + x) + "px";
+  menu.style.top  = (canvas.position().y + y) + "px";
   menu.style.display="block";
 }
 
